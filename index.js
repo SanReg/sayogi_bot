@@ -19,7 +19,7 @@ const bot = new Telegraf(token);
 
 // Initialize Gemini
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL_NAME = 'gemini-3.1-flash-lite'; // Recommended fast & smart model
+const MODEL_NAME = 'gemma-4-31b-it'; // Recommended fast & smart model
 
 // In-memory storage for chat history
 const chatHistories = {};
@@ -330,7 +330,7 @@ When the user asks you to remind them of something, use the schedule_reminder to
 When the user asks you to modify/change an existing reminder, use the modify_reminder tool.
 When the user asks you to cancel/delete a reminder, use the delete_reminder tool.
 When the user asks you to create an HTML page, website, or web app, use the create_webpage tool and give them the generated link.
-When the user asks to see all sites/webpages they have created, use the list_webpages tool.
+When the user asks to see all sites/webpages they have created, use the list_webpages tool and MAKE SURE to include the clickable link for each website in your response.
 When the user asks to delete or remove a website they created, use the delete_webpage tool.
 When the user asks to modify, update, or change an existing website they created, use the modify_webpage tool.
 
@@ -351,31 +351,16 @@ Be concise, friendly, and act like a real personal assistant.
 `;
 
     try {
-        let response;
-        try {
-            response = await ai.models.generateContent({
-                model: MODEL_NAME,
-                contents: chatHistories[chatId],
-                config: {
-                    systemInstruction: dynamicSystemInstruction,
-                    tools: tools,
-                    temperature: 0.7,
-                }
-            });
-        } catch (initialError) {
-            console.warn(`Primary model ${MODEL_NAME} failed, falling back to gemma-4-31b:`, initialError.message);
-            response = await ai.models.generateContent({
-                model: 'gemma-4-31b',
-                contents: chatHistories[chatId],
-                config: {
-                    systemInstruction: dynamicSystemInstruction,
-                    tools: tools,
-                    temperature: 0.7,
-                }
-            });
-        }
+        let response = await ai.models.generateContent({
+            model: MODEL_NAME,
+            contents: chatHistories[chatId],
+            config: {
+                systemInstruction: dynamicSystemInstruction,
+                tools: tools,
+                temperature: 0.7,
+            }
+        });
 
-        const reply = response.text;
         let handledTool = false;
         
         // Handle tool calls
@@ -494,26 +479,14 @@ Be concise, friendly, and act like a real personal assistant.
             // Get the AI's natural language confirmation
             let followupResponse;
             try {
-                try {
-                    followupResponse = await ai.models.generateContent({
-                        model: MODEL_NAME,
-                        contents: chatHistories[chatId],
-                        config: {
-                            systemInstruction: dynamicSystemInstruction,
-                            temperature: 0.7,
-                        }
-                    });
-                } catch (initialError) {
-                    console.warn(`Primary model ${MODEL_NAME} failed for followup, falling back to gemma-4-31b:`, initialError.message);
-                    followupResponse = await ai.models.generateContent({
-                        model: 'gemma-4-31b',
-                        contents: chatHistories[chatId],
-                        config: {
-                            systemInstruction: dynamicSystemInstruction,
-                            temperature: 0.7,
-                        }
-                    });
-                }
+                followupResponse = await ai.models.generateContent({
+                    model: MODEL_NAME,
+                    contents: chatHistories[chatId],
+                    config: {
+                        systemInstruction: dynamicSystemInstruction,
+                        temperature: 0.7,
+                    }
+                });
             } catch (e) {
                 // If API rejects the history structure, pop the function call & response to prevent permanent corruption
                 chatHistories[chatId].pop();
@@ -532,7 +505,8 @@ Be concise, friendly, and act like a real personal assistant.
                 }
                 chatHistories[chatId].push({ role: 'model', parts: [{ text: finalReply }] });
             }
-        } else if (reply) {
+        } else if (response.text) {
+            let reply = response.text;
             let cleanReply = reply.replace(/\*\*/g, '').replace(/#/g, '').replace(/^\s*\*\s+/gm, '📅 ');
             try {
                 await ctx.reply(cleanReply, { parse_mode: 'HTML' });
@@ -541,12 +515,12 @@ Be concise, friendly, and act like a real personal assistant.
             }
             chatHistories[chatId].push({ role: 'model', parts: [{ text: reply }] });
         } else {
-            ctx.reply("I processed your request, but I don't have anything to say.");
+            await ctx.reply("I processed your request, but I don't have anything to say.").catch(e => console.error("Reply error:", e));
         }
         
     } catch (error) {
         console.error('Error generating content:', error);
-        ctx.reply("Sorry, I encountered an error while processing your request.");
+        await ctx.reply("Sorry, I encountered an error while processing your request.").catch(e => console.error("Reply error:", e));
     }
 });
 
@@ -561,11 +535,16 @@ bot.telegram.setMyCommands([
     console.log('Bot commands menu updated.');
 }).catch(console.error);
 
-bot.launch().then(() => {
-    console.log('Bot is polling for messages...');
-}).catch(err => {
-    console.error("Failed to launch bot:", err);
-});
+const startBot = () => {
+    bot.launch().then(() => {
+        console.log('Bot is polling for messages...');
+    }).catch(err => {
+        console.error("Failed to launch bot:", err.message);
+        console.log("Retrying in 5 seconds...");
+        setTimeout(startBot, 5000);
+    });
+};
+startBot();
 
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));

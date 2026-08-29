@@ -246,37 +246,73 @@ bot.on('text', async (ctx) => {
     // Add user message to history
     chatHistories[chatId].push({ role: 'user', parts: [{ text: text }] });
     
-    // Validate and clean history to STRICTLY alternate user/model and start with user
-    // This prevents "Please ensure that function call turn comes immediately after..." errors
-    let cleaned = [];
-    let expectedRole = 'user';
+    // Validate and merge history to safely alternate user/model
+    let merged = [];
     for (const msg of chatHistories[chatId]) {
-        // Treat 'function' role as 'user' for alternating purposes
-        const normalizedRole = (msg.role === 'function') ? 'user' : msg.role;
-        if (normalizedRole === expectedRole) {
-            cleaned.push(msg);
-            expectedRole = (expectedRole === 'user') ? 'model' : 'user';
-        } else if (normalizedRole === 'user' && expectedRole === 'user') {
-            // Consecutive user turns: merge or just drop the previous one. We'll just drop the previous.
-            if (cleaned.length > 0) cleaned.pop();
-            cleaned.push(msg);
-            expectedRole = 'model';
-        } else if (normalizedRole === 'model' && expectedRole === 'model') {
-            // Consecutive model turns: drop the previous one
-            if (cleaned.length > 0) cleaned.pop();
-            cleaned.push(msg);
-            expectedRole = 'user';
+        const role = msg.role === 'function' ? 'user' : msg.role;
+        // Deep copy parts to prevent mutating old references
+        const parts = msg.parts.map(p => ({ ...p }));
+        
+        if (merged.length === 0) {
+            if (role === 'user') merged.push({ role, parts });
+        } else {
+            const last = merged[merged.length - 1];
+            if (last.role === role) {
+                last.parts.push(...parts);
+            } else {
+                merged.push({ role, parts });
+            }
         }
     }
-    
+
+    // Strip dangling function calls or responses
+    for (let i = 0; i < merged.length; i++) {
+        const msg = merged[i];
+        if (msg.role === 'user') {
+            const prevHadCall = i > 0 && merged[i-1].role === 'model' && merged[i-1].parts.some(p => p.functionCall);
+            if (!prevHadCall) {
+                msg.parts = msg.parts.filter(p => !p.functionResponse);
+            }
+        } else if (msg.role === 'model') {
+            const nextHasResp = i < merged.length - 1 && merged[i+1].role === 'user' && merged[i+1].parts.some(p => p.functionResponse);
+            if (!nextHasResp) {
+                msg.parts = msg.parts.filter(p => !p.functionCall);
+            }
+        }
+    }
+
+    merged = merged.filter(msg => msg.parts.length > 0);
+
+    // Re-merge in case filtering created consecutive roles
+    let finalHistory = [];
+    for (const msg of merged) {
+        if (finalHistory.length === 0) {
+            if (msg.role === 'user') finalHistory.push(msg);
+        } else {
+            const last = finalHistory[finalHistory.length - 1];
+            if (last.role === msg.role) {
+                last.parts.push(...msg.parts);
+            } else {
+                finalHistory.push(msg);
+            }
+        }
+    }
+
     // Keep history manageable (last 20)
-    if (cleaned.length > 20) {
-        cleaned = cleaned.slice(-20);
-        while (cleaned.length > 0 && cleaned[0].role !== 'user') {
-            cleaned.shift();
+    if (finalHistory.length > 20) {
+        finalHistory = finalHistory.slice(-20);
+        while (finalHistory.length > 0 && finalHistory[0].role !== 'user') {
+            finalHistory.shift();
+        }
+        if (finalHistory.length > 0 && finalHistory[0].role === 'user') {
+            finalHistory[0].parts = finalHistory[0].parts.filter(p => !p.functionResponse);
+            if (finalHistory[0].parts.length === 0) {
+                finalHistory.shift();
+                if (finalHistory.length > 0 && finalHistory[0].role === 'model') finalHistory.shift();
+            }
         }
     }
-    chatHistories[chatId] = cleaned;
+    chatHistories[chatId] = finalHistory;
 
     // Send typing action
     ctx.sendChatAction('typing');
@@ -315,15 +351,29 @@ Be concise, friendly, and act like a real personal assistant.
 `;
 
     try {
-        const response = await ai.models.generateContent({
-            model: MODEL_NAME,
-            contents: chatHistories[chatId],
-            config: {
-                systemInstruction: dynamicSystemInstruction,
-                tools: tools,
-                temperature: 0.7,
-            }
-        });
+        let response;
+        try {
+            response = await ai.models.generateContent({
+                model: MODEL_NAME,
+                contents: chatHistories[chatId],
+                config: {
+                    systemInstruction: dynamicSystemInstruction,
+                    tools: tools,
+                    temperature: 0.7,
+                }
+            });
+        } catch (initialError) {
+            console.warn(`Primary model ${MODEL_NAME} failed, falling back to gemma-4-31b:`, initialError.message);
+            response = await ai.models.generateContent({
+                model: 'gemma-4-31b',
+                contents: chatHistories[chatId],
+                config: {
+                    systemInstruction: dynamicSystemInstruction,
+                    tools: tools,
+                    temperature: 0.7,
+                }
+            });
+        }
 
         const reply = response.text;
         let handledTool = false;
@@ -444,14 +494,26 @@ Be concise, friendly, and act like a real personal assistant.
             // Get the AI's natural language confirmation
             let followupResponse;
             try {
-                followupResponse = await ai.models.generateContent({
-                    model: MODEL_NAME,
-                    contents: chatHistories[chatId],
-                    config: {
-                        systemInstruction: dynamicSystemInstruction,
-                        temperature: 0.7,
-                    }
-                });
+                try {
+                    followupResponse = await ai.models.generateContent({
+                        model: MODEL_NAME,
+                        contents: chatHistories[chatId],
+                        config: {
+                            systemInstruction: dynamicSystemInstruction,
+                            temperature: 0.7,
+                        }
+                    });
+                } catch (initialError) {
+                    console.warn(`Primary model ${MODEL_NAME} failed for followup, falling back to gemma-4-31b:`, initialError.message);
+                    followupResponse = await ai.models.generateContent({
+                        model: 'gemma-4-31b',
+                        contents: chatHistories[chatId],
+                        config: {
+                            systemInstruction: dynamicSystemInstruction,
+                            temperature: 0.7,
+                        }
+                    });
+                }
             } catch (e) {
                 // If API rejects the history structure, pop the function call & response to prevent permanent corruption
                 chatHistories[chatId].pop();

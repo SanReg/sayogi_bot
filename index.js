@@ -19,7 +19,24 @@ const bot = new Telegraf(token);
 
 // Initialize Gemini
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL_NAME = 'gemma-4-31b-it'; // Recommended fast & smart model
+const MODELS_TO_TRY = [
+    'gemini-3.1-flash-lite',
+    'gemini-2.5-flash',
+    'gemma-4-31b-it',
+    'gemma-4-26b-a4b-it'
+];
+
+async function generateWithFallback(options) {
+    for (let i = 0; i < MODELS_TO_TRY.length; i++) {
+        const modelName = MODELS_TO_TRY[i];
+        try {
+            return await ai.models.generateContent({ ...options, model: modelName });
+        } catch (err) {
+            console.warn(`Model ${modelName} failed. Error:`, err.message);
+            if (i === MODELS_TO_TRY.length - 1) throw err;
+        }
+    }
+}
 
 // In-memory storage for chat history
 const chatHistories = {};
@@ -351,15 +368,16 @@ Be concise, friendly, and act like a real personal assistant.
 `;
 
     try {
-        let response = await ai.models.generateContent({
-            model: MODEL_NAME,
+        let response;
+        const genOptions = {
             contents: chatHistories[chatId],
             config: {
                 systemInstruction: dynamicSystemInstruction,
                 tools: tools,
                 temperature: 0.7,
             }
-        });
+        };
+        response = await generateWithFallback(genOptions);
 
         let handledTool = false;
         
@@ -479,14 +497,14 @@ Be concise, friendly, and act like a real personal assistant.
             // Get the AI's natural language confirmation
             let followupResponse;
             try {
-                followupResponse = await ai.models.generateContent({
-                    model: MODEL_NAME,
+                const followupOptions = {
                     contents: chatHistories[chatId],
                     config: {
                         systemInstruction: dynamicSystemInstruction,
                         temperature: 0.7,
                     }
-                });
+                };
+                followupResponse = await generateWithFallback(followupOptions);
             } catch (e) {
                 // If API rejects the history structure, pop the function call & response to prevent permanent corruption
                 chatHistories[chatId].pop();

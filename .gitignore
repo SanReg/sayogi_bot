@@ -1,0 +1,6 @@
+node_modules/
+.env
+reminders.json
+websites.json
+npm-debug.log
+.DS_Store

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sayogi_Bot Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #0b021a;
+            color: #ff00ff;
+        }
+        /* Synthwave sun */
+        .sun {
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(to bottom, #ff00ff 0%, #ff00ff 40%, transparent 40%, transparent 45%, #ff8800 45%, #ff8800 55%, transparent 55%, transparent 60%, #ffff00 60%);
+            border-radius: 50%;
+            box-shadow: 0 0 50px #ff00ff;
+            z-index: 1;
+        }
+        /* Synthwave Grid */
+        .grid-floor {
+            position: absolute;
+            bottom: 0;
+            left: -50%;
+            width: 200%;
+            height: 35%;
+            background-image: 
+                linear-gradient(to right, #00ffff 1px, transparent 1px),
+                linear-gradient(to bottom, #00ffff 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: perspective(500px) rotateX(60deg);
+            z-index: 2;
+            animation: moveGrid 2s linear infinite;
+        }
+        @keyframes moveGrid {
+            from { background-position: 0 0; }
+            to { background-position: 0 50px; }
+        }
+        /* Scanlines */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0%,
+                rgba(0, 255, 255, 0.05) 0.5%,
+                transparent 1%
+            );
+            pointer-events: none;
+            z-index: 50;
+        }
+        /* Glitch text effect */
+        .glitch:hover {
+            animation: glitch-anim 0.2s infinite;
+            color: #00ffff;
+            text-shadow: 2px 0 #ff00ff, -2px 0 #ffff00;
+        }
+        @keyframes glitch-anim {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 1px) }
+            40% { transform: translate(-1px, -1px) }
+            60% { transform: translate(2px, 1px) }
+            80% { transform: translate(1px, -1px) }
+            100% { transform: translate(0) }
+        }
+        .retro-box {
+            background: rgba(11, 2, 26, 0.8);
+            border: 4px solid #00ffff;
+            box-shadow: 0 0 15px #00ffff, inset 0 0 10px #00ffff;
+        }
+        .blinking-cursor::after {
+            content: '_';
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+    
+    <!-- Retro Background Elements -->
+    <div class="sun"></div>
+    <div class="grid-floor"></div>
+    <div class="scanlines"></div>
+
+    <!-- Main Content -->
+    <main class="z-10 text-center px-4 max-w-4xl mx-auto flex flex-col items-center">
+        
+        <h1 class="text-3xl md:text-5xl mb-8 leading-snug text-transparent bg-clip-text bg-gradient-to-b from-[#00ffff] to-[#ff00ff] filter drop-shadow-[0_0_10px_rgba(255,0,255,0.8)] glitch uppercase">
+            Sayogi_Bot
+        </h1>
+        
+        <p class="text-xs md:text-sm text-[#ffff00] mb-10 max-w-2xl mx-auto leading-loose blinking-cursor">
+            > SYSTEM INITIALIZED...<br>
+            > AWAITING COMMANDS...<br>
+            > READY TO KICK ASS...
+        </p>
+
+        <!-- Retro Status Card -->
+        <div class="retro-box p-6 md:p-8 flex flex-col md:flex-row items-center gap-8 w-full max-w-lg mb-8 transition-transform hover:scale-105 duration-200">
+            <div class="flex items-center gap-4 text-sm">
+                <div class="w-4 h-4 bg-[#00ff00] rounded-sm shadow-[0_0_10px_#00ff00] animate-pulse"></div>
+                <span class="text-[#00ff00]">STATUS: ONLINE</span>
+            </div>
+            
+            <a href="https://t.me/Sayogi_Bot" target="_blank" class="px-6 py-4 bg-[#ff00ff] text-[#0b021a] hover:bg-[#00ffff] border-b-4 border-r-4 border-white transition-colors text-xs flex items-center gap-3 active:border-0 active:translate-y-1 active:translate-x-1">
+                [ INSERT COIN TO CHAT ]
+            </a>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="absolute bottom-4 z-10 text-[10px] text-[#00ffff] tracking-widest uppercase">
+        Powered by coffee lol ☕
+    </footer>
+
+</body>
+</html>

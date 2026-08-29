@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional CS Portfolio</title>
+    <style>
+        :root { --primary: #38bdf8; --bg: #0a0a0a; --card: rgba(255, 255, 255, 0.05); }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--bg); color: #e2e8f0; font-family: 'Inter', sans-serif; line-height: 1.6; }
+        
+        /* Navbar */
+        nav { padding: 2rem 10%; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+        .nav-links a { margin-left: 2rem; text-decoration: none; color: #fff; transition: 0.3s; }
+        .nav-links a:hover { color: var(--primary); }
+
+        /* Hero */
+        .hero { height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 0 10%; }
+        h1 { font-size: 5rem; margin-bottom: 1rem; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .tagline { font-size: 1.5rem; color: #64748b; margin-bottom: 2rem; }
+
+        /* Projects Section */
+        .projects { padding: 4rem 10%; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        .card { padding: 2rem; background: var(--card); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); transition: 0.4s; cursor: pointer; }
+        .card:hover { transform: translateY(-15px); border-color: var(--primary); background: rgba(255, 255, 255, 0.08); }
+        h3 { margin-bottom: 1rem; color: var(--primary); }
+
+        /* Footer */
+        footer { padding: 4rem; text-align: center; border-top: 1px solid #1e293b; color: #475569; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">CS_DEV.</div>
+        <div class="nav-links">
+            <a href="#">Home</a>
+            <a href="#">Projects</a>
+            <a href="#">Skills</a>
+            <a href="#">Contact</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>Building Digital Futures</h1>
+        <p class="tagline">Computer Science student passionate about full-stack development, AI, and scalable architecture.</p>
+        <button style="padding: 15px 40px; background: var(--primary); border: none; border-radius: 50px; font-weight: bold; cursor: pointer;">Explore My Work</button>
+    </section>
+
+    <section class="projects">
+        <h2 style="margin-bottom: 3rem; font-size: 2.5rem;">Featured Projects</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>AI Task Manager</h3>
+                <p>An intelligent task management system using machine learning to prioritize daily workflows effectively.</p>
+            </div>
+            <div class="card">
+                <h3>Cloud Network Monitor</h3>
+                <p>Real-time network traffic analyzer built with Python and React for optimized cloud infrastructure.</p>
+            </div>
+            <div class="card">
+                <h3>Decentralized Finance App</h3>
+                <p>A secure, blockchain-based ledger system designed for transparent and fast financial transactions.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2083 CS_DEV Portfolio. Built with passion.</p>
+    </footer>
+</body>
+</html>

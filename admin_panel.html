@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Nepali Date Picker -->
+    <link href="https://nepalidatepicker.sajanmaharjan.com.np/nepali.datepicker/css/nepali.datepicker.v4.0.1.min.css" rel="stylesheet" type="text/css"/>
+    <script src="https://nepalidatepicker.sajanmaharjan.com.np/nepali.datepicker/js/nepali.datepicker.v4.0.1.min.js" type="text/javascript"></script>
+    <style>
+        [v-cloak] { display: none; }
+        body { background-color: #f3f4f6; }
+        .toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
+        .toast-enter-from { opacity: 0; transform: translateY(20px); }
+        .toast-leave-to { opacity: 0; transform: translateY(-20px); }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div id="app" v-cloak class="min-h-screen flex flex-col relative">
+        
+        <!-- Toast Container -->
+        <div class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2">
+            <transition-group name="toast">
+                <div v-for="toast in toasts" :key="toast.id" :class="[toast.type === 'error' ? 'bg-red-600' : 'bg-green-600', 'text-white px-4 py-3 rounded shadow-lg flex items-center gap-3 text-sm font-bold min-w-[250px] max-w-sm']">
+                    <i :class="toast.type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-check-circle'"></i>
+                    {{ toast.message }}
+                </div>
+            </transition-group>
+        </div>
+
+        <!-- Login Screen -->
+        <div v-if="!isLoggedIn" class="flex-grow flex items-center justify-center p-4">
+            <div class="bg-white p-6 md:p-8 rounded-lg shadow-md w-full max-w-sm">
+                <h1 class="text-2xl font-bold mb-6 text-center text-blue-600"><i class="fas fa-shield-alt"></i> Admin Login</h1>
+                <div v-if="loginError" class="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">{{ loginError }}</div>
+                
+                <div class="relative mb-4">
+                    <input :type="showPassword ? 'text' : 'password'" v-model="password" @keyup.enter="login" placeholder="Enter Admin Password" class="w-full border p-3 rounded pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700">
+                        <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                    </button>
+                </div>
+                
+                <div class="flex items-center mb-6">
+                    <input type="checkbox" id="remember" v-model="rememberPassword" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="remember" class="ml-2 block text-sm text-gray-900">Remember me on this device</label>
+                </div>
+
+                <button @click="login" class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700 transition shadow">Login</button>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div v-else class="flex-grow flex flex-col h-screen overflow-hidden">
+            <!-- Navbar -->
+            <nav class="bg-blue-800 text-white p-3 md:p-4 shadow-md flex justify-between items-center z-10 shrink-0">
+                <div class="text-lg md:text-xl font-bold truncate"><i class="fas fa-robot hidden md:inline"></i> Admin Panel</div>
+                <button @click="logout" class="bg-red-500 px-3 py-1.5 md:px-4 md:py-2 rounded hover:bg-red-600 text-xs md:text-sm font-bold shadow transition"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </nav>
+
+            <div class="flex-grow flex flex-col md:flex-row overflow-hidden">
+                <!-- Sidebar / Mobile Nav -->
+                <div class="w-full md:w-64 bg-white shadow-lg flex flex-row md:flex-col overflow-x-auto md:overflow-y-auto shrink-0 border-b md:border-b-0 md:border-r border-gray-200">
+                    <button @click="currentView = 'dashboard'" :class="{'bg-blue-50 text-blue-700 md:border-r-4 md:border-b-0 border-b-4 border-blue-600': currentView === 'dashboard'}" class="flex-1 md:flex-none p-3 md:p-4 text-center md:text-left hover:bg-gray-50 transition border-r md:border-r-0 md:border-b whitespace-nowrap"><i class="fas fa-chart-line md:w-6"></i> Dashboard</button>
+                    <button @click="currentView = 'users'" :class="{'bg-blue-50 text-blue-700 md:border-r-4 md:border-b-0 border-b-4 border-blue-600': currentView === 'users'}" class="flex-1 md:flex-none p-3 md:p-4 text-center md:text-left hover:bg-gray-50 transition border-r md:border-r-0 md:border-b whitespace-nowrap"><i class="fas fa-users md:w-6"></i> Users</button>
+                </div>
+
+                <!-- Main Content -->
+                <div class="flex-grow p-4 md:p-8 overflow-y-auto w-full">
+                    
+                    <!-- Dashboard View -->
+                    <div v-if="currentView === 'dashboard'">
+                        <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6">Overview</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                            <div class="bg-white p-5 rounded-lg shadow border-l-4 border-blue-500">
+                                <div class="text-gray-500 text-xs md:text-sm uppercase font-bold mb-1">Total Users</div>
+                                <div class="text-2xl md:text-3xl font-bold">{{ stats.users }}</div>
+                            </div>
+                            <div class="bg-white p-5 rounded-lg shadow border-l-4 border-green-500">
+                                <div class="text-gray-500 text-xs md:text-sm uppercase font-bold mb-1">Total Websites</div>
+                                <div class="text-2xl md:text-3xl font-bold">{{ stats.websites }}</div>
+                            </div>
+                            <div class="bg-white p-5 rounded-lg shadow border-l-4 border-purple-500">
+                                <div class="text-gray-500 text-xs md:text-sm uppercase font-bold mb-1">Total Reminders</div>
+                                <div class="text-2xl md:text-3xl font-bold">{{ stats.reminders }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Users View -->
+                    <div v-if="currentView === 'users'">
+                        <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6">User Management</h2>
+                        <div class="bg-white rounded-lg shadow overflow-hidden w-full">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Contact</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Quotas</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <tr v-for="user in users" :key="user.chatId" class="hover:bg-gray-50">
+                                            <td class="px-4 py-3 whitespace-nowrap">
+                                                <div class="font-medium text-gray-900 text-sm">{{ user.firstName }} {{ user.lastName }}</div>
+                                                <div class="text-xs text-gray-500">@{{ user.username || 'N/A' }}</div>
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">{{ user.phoneNumber || 'N/A' }}</td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                <div class="flex space-x-1">
+                                                    <span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs font-bold" title="Websites">W:{{ user.websitesCount }}/{{ user.maxWebsites }}</span>
+                                                    <span class="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded text-xs font-bold" title="Active Reminders">A:{{ user.maxActiveReminders }}</span>
+                                                    <span class="bg-pink-100 text-pink-800 px-1.5 py-0.5 rounded text-xs font-bold" title="Recurring Reminders">R:{{ user.maxRecurringReminders }}</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap">
+                                                <span v-if="user.isLocked" class="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-red-100 text-red-800">Locked ({{ user.strikes }})</span>
+                                                <span v-else class="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-green-100 text-green-800">Active ({{ user.strikes }})</span>
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-center">
+                                                <button @click="openUserDetails(user)" class="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1 rounded shadow-sm text-xs md:text-sm border border-blue-200">Manage</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- User Details Modal -->
+        <div v-if="selectedUser" class="fixed inset-0 bg-black bg-opacity-60 flex justify-center z-50 overflow-y-auto sm:items-center sm:p-4">
+            <div class="bg-gray-50 shadow-2xl w-full sm:w-11/12 max-w-4xl flex flex-col sm:rounded-lg min-h-screen sm:min-h-0 sm:max-h-[90vh]">
+                <div class="px-4 py-3 md:px-6 md:py-4 border-b flex justify-between items-center bg-white sm:rounded-t-lg sticky top-0 z-10 shadow-sm">
+                    <h3 class="text-base md:text-lg font-bold truncate pr-4">User: {{ selectedUser.firstName }} ({{ selectedUser.chatId }})</h3>
+                    <button @click="selectedUser = null" class="text-gray-500 hover:text-red-500 bg-gray-100 hover:bg-red-50 rounded-full w-8 h-8 flex items-center justify-center transition"><i class="fas fa-times"></i></button>
+                </div>
+                
+                <div class="p-4 md:p-6 overflow-y-auto flex-grow pb-24 sm:pb-6">
+                    <!-- Limits Editor -->
+                    <div class="bg-white p-4 rounded-lg shadow-sm border mb-4 md:mb-6">
+                        <h4 class="font-bold mb-3 md:mb-4 text-gray-700 border-b pb-2 text-sm md:text-base">Quotas & Status</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase">Websites</label>
+                                <input type="number" v-model="editForm.maxWebsites" class="mt-1 w-full border p-2 rounded text-sm focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase">Actv Reminders</label>
+                                <input type="number" v-model="editForm.maxActiveReminders" class="mt-1 w-full border p-2 rounded text-sm focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase">Recur Reminders</label>
+                                <input type="number" v-model="editForm.maxRecurringReminders" class="mt-1 w-full border p-2 rounded text-sm focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase">Strikes</label>
+                                <input type="number" v-model="editForm.strikes" class="mt-1 w-full border p-2 rounded text-sm focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div class="col-span-2 md:col-span-1">
+                                <label class="block text-xs font-bold text-gray-500 uppercase">Account Lock</label>
+                                <select v-model="editForm.isLocked" class="mt-1 w-full border p-2 rounded text-sm bg-white focus:ring-1 focus:ring-blue-500">
+                                    <option :value="true">Locked</option>
+                                    <option :value="false">Active</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end">
+                            <button @click="saveUserDetails" class="bg-blue-600 text-white px-5 py-2 rounded text-sm font-bold hover:bg-blue-700 shadow w-full md:w-auto"><i class="fas fa-save mr-1"></i> Save Changes</button>
+                        </div>
+                    </div>
+
+                    <!-- Send Message -->
+                    <div class="bg-indigo-50 p-4 rounded-lg shadow-sm border border-indigo-200 mb-4 md:mb-6">
+                        <h4 class="font-bold mb-3 text-indigo-800 text-sm md:text-base"><i class="fas fa-paper-plane mr-1"></i> Send Telegram Message</h4>
+                        <div class="flex flex-col gap-2">
+                            <div class="flex gap-2 bg-white p-2 rounded border border-indigo-100 items-center">
+                                <button @click="insertFormat('b')" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-200 rounded border font-bold text-gray-700 transition" title="Bold">B</button>
+                                <button @click="insertFormat('i')" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-200 rounded border italic text-gray-700 transition font-serif" title="Italic">I</button>
+                                <button @click="insertFormat('u')" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-200 rounded border underline text-gray-700 transition" title="Underline">U</button>
+                                <button @click="insertEmoji('🎉')" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-200 rounded border transition" title="Emoji">😊</button>
+                                <span class="text-xs text-indigo-400 ml-2 hidden sm:inline">Tip: Use Win + . or Cmd + Ctrl + Space for more emojis!</span>
+                            </div>
+                            <textarea id="msg-textarea" v-model="directMessage" rows="4" placeholder="Type a multi-line message... HTML tags like <b>, <i>, <u> are supported." class="w-full border p-3 rounded text-sm focus:ring-2 focus:ring-indigo-500 bg-white resize-y"></textarea>
+                            <div class="flex justify-end">
+                                <button @click="sendDirectMessage" :disabled="!directMessage" class="bg-indigo-600 disabled:bg-indigo-300 text-white px-6 py-2 rounded text-sm font-bold shadow hover:bg-indigo-700 transition"><i class="fas fa-paper-plane mr-1"></i> Send Message</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                        <!-- Websites List -->
+                        <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                            <div class="bg-gray-50 px-4 py-3 font-bold text-gray-700 border-b flex justify-between items-center text-sm md:text-base">
+                                <span><i class="fas fa-globe text-blue-500 mr-1"></i> Websites</span>
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">{{ userDetails.websites.length }}</span>
+                            </div>
+                            <div class="p-3 md:p-4 max-h-80 overflow-y-auto">
+                                <div v-if="userDetails.websites.length === 0" class="text-sm text-gray-500 italic text-center py-4">No websites created.</div>
+                                <div v-for="site in userDetails.websites" :key="site.foldername" class="flex justify-between items-center mb-2 md:mb-3 p-2 md:p-3 bg-white hover:bg-gray-50 rounded border transition shadow-sm group">
+                                    <div class="overflow-hidden pr-2">
+                                        <div class="font-bold text-sm truncate text-gray-800">{{ site.foldername }}</div>
+                                        <a :href="site.url" target="_blank" class="text-xs text-blue-500 hover:underline truncate block mt-0.5"><i class="fas fa-external-link-alt text-[10px]"></i> {{ site.url }}</a>
+                                    </div>
+                                    <button @click="deleteWebsite(site.foldername)" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 md:p-2 rounded md:opacity-0 group-hover:opacity-100 transition shrink-0" title="Delete Website"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reminders Section -->
+                        <div class="space-y-4 md:space-y-6">
+                            
+                            <!-- Add Reminder Box -->
+                            <div class="bg-blue-50 rounded-lg shadow-sm border border-blue-200 overflow-hidden">
+                                <div class="bg-blue-100 px-4 py-2 font-bold text-blue-800 border-b border-blue-200 text-sm"><i class="fas fa-plus-circle mr-1"></i> Add New Reminder</div>
+                                <div class="p-4 space-y-3">
+                                    <div>
+                                        <input type="text" v-model="newReminder.task" placeholder="Task description..." class="w-full border p-2 rounded text-sm focus:ring-1 focus:ring-blue-500">
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="ndp-date" placeholder="Nepali Date" class="w-1/3 border p-2 rounded text-sm focus:ring-1 focus:ring-blue-500 bg-white" readonly>
+                                        <input type="time" v-model="newReminder.timeString" class="w-1/3 border p-2 rounded text-sm focus:ring-1 focus:ring-blue-500 bg-white">
+                                        <select v-model="newReminder.recurrence" class="border p-2 rounded text-sm bg-white focus:ring-1 focus:ring-blue-500 w-1/3">
+                                            <option value="none">Once</option>
+                                            <option value="hourly">Hourly</option>
+                                            <option value="daily">Daily</option>
+                                            <option value="weekly">Weekly</option>
+                                            <option value="monthly">Monthly</option>
+                                        </select>
+                                    </div>
+                                    <button @click="addReminder" :disabled="!newReminder.task || !newReminder.timeString" class="w-full bg-blue-600 disabled:bg-blue-300 text-white py-2 rounded text-sm font-bold shadow hover:bg-blue-700 transition">Create Reminder</button>
+                                </div>
+                            </div>
+
+                            <!-- Active Reminders -->
+                            <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                                <div class="bg-gray-50 px-4 py-3 font-bold text-gray-700 border-b flex justify-between items-center text-sm md:text-base">
+                                    <span><i class="fas fa-bell text-yellow-500 mr-1"></i> Active Reminders</span>
+                                    <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full">{{ activeReminders.length }}</span>
+                                </div>
+                                <div class="p-3 md:p-4 max-h-64 overflow-y-auto">
+                                    <div v-if="activeReminders.length === 0" class="text-sm text-gray-500 italic text-center py-4">No active reminders.</div>
+                                    <div v-for="rem in activeReminders" :key="rem.id" class="mb-2 md:mb-3 p-2 md:p-3 bg-white rounded border border-yellow-200 shadow-sm flex justify-between items-start group">
+                                        <div class="pr-2">
+                                            <div class="font-bold text-sm text-gray-800">{{ rem.task }}</div>
+                                            <div class="text-xs text-gray-600 mt-1"><i class="far fa-clock text-yellow-600"></i> {{ rem.formattedTime || new Date(rem.time).toLocaleString() }}</div>
+                                            <div v-if="rem.recurrence && rem.recurrence !== 'none'" class="text-[11px] font-bold text-purple-600 mt-1 bg-purple-50 inline-block px-1.5 py-0.5 rounded border border-purple-100"><i class="fas fa-redo"></i> {{ rem.recurrence }}</div>
+                                        </div>
+                                        <button @click="deleteReminder(rem.id)" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded md:opacity-0 group-hover:opacity-100 transition shrink-0"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Completed Reminders -->
+                            <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                                <div class="bg-gray-50 px-4 py-3 font-bold text-gray-700 border-b flex justify-between items-center text-sm md:text-base">
+                                    <span><i class="fas fa-check-circle text-green-500 mr-1"></i> Completed Reminders</span>
+                                    <span class="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">{{ completedReminders.length }}</span>
+                                </div>
+                                <div class="p-3 md:p-4 max-h-64 overflow-y-auto">
+                                    <div v-if="completedReminders.length === 0" class="text-sm text-gray-500 italic text-center py-4">No completed reminders.</div>
+                                    <div v-for="rem in completedReminders" :key="rem.id" class="mb-2 md:mb-3 p-2 md:p-3 bg-gray-50 rounded border border-gray-200 flex justify-between items-start">
+                                        <div class="pr-2">
+                                            <div class="font-medium text-sm text-gray-500 line-through">{{ rem.task }}</div>
+                                            <div class="text-xs text-gray-400 mt-1"><i class="far fa-clock"></i> {{ rem.formattedTime || new Date(rem.time).toLocaleString() }}</div>
+                                        </div>
+                                        <button @click="deleteReminder(rem.id)" class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded transition shrink-0"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    password: '',
+                    showPassword: false,
+                    rememberPassword: true,
+                    isLoggedIn: false,
+                    loginError: '',
+                    currentView: 'dashboard',
+                    stats: { users: 0, websites: 0, reminders: 0 },
+                    users: [],
+                    selectedUser: null,
+                    userDetails: { websites: [], reminders: [] },
+                    editForm: {},
+                    newReminder: { task: '', timeString: '', bsDate: '', recurrence: 'none' },
+                    directMessage: '',
+                    toasts: []
+                }
+            },
+            computed: {
+                activeReminders() {
+                    const now = Date.now();
+                    return this.userDetails.reminders.filter(r => 
+                        (r.recurrence && r.recurrence !== 'none') || new Date(r.time).getTime() > now
+                    ).sort((a, b) => new Date(a.time) - new Date(b.time));
+                },
+                completedReminders() {
+                    const now = Date.now();
+                    return this.userDetails.reminders.filter(r => 
+                        (!r.recurrence || r.recurrence === 'none') && new Date(r.time).getTime() <= now
+                    ).sort((a, b) => new Date(b.time) - new Date(a.time));
+                }
+            },
+            mounted() {
+                const token = localStorage.getItem('admin_token');
+                if (token) {
+                    this.password = token;
+                    this.rememberPassword = true;
+                    this.verifyLogin();
+                }
+            },
+            methods: {
+                showToast(message, type = 'success') {
+                    const id = Date.now();
+                    this.toasts.push({ id, message, type });
+                    setTimeout(() => {
+                        this.toasts = this.toasts.filter(t => t.id !== id);
+                    }, 3500);
+                },
+                getHeaders() {
+                    return {
+                        'Authorization': `Bearer ${this.password}`,
+                        'Content-Type': 'application/json'
+                    };
+                },
+                async apiCall(endpoint, options = {}) {
+                    const res = await fetch(`/api/admin${endpoint}`, {
+                        ...options,
+                        headers: this.getHeaders()
+                    });
+                    if (res.status === 401) {
+                        this.logout();
+                        throw new Error('Unauthorized');
+                    }
+                    if (!res.ok) {
+                        const data = await res.json();
+                        throw new Error(data.error || 'API Error');
+                    }
+                    return res.json();
+                },
+                async verifyLogin() {
+                    try {
+                        await this.loadStats();
+                        this.isLoggedIn = true;
+                        if (this.rememberPassword) {
+                            localStorage.setItem('admin_token', this.password);
+                        } else {
+                            localStorage.removeItem('admin_token');
+                        }
+                        this.loadUsers();
+                    } catch (e) {
+                        this.loginError = "Incorrect password. Please try again.";
+                        localStorage.removeItem('admin_token');
+                    }
+                },
+                login() {
+                    if (!this.password) return;
+                    this.verifyLogin();
+                },
+                logout() {
+                    this.isLoggedIn = false;
+                    this.password = '';
+                    localStorage.removeItem('admin_token');
+                },
+                async loadStats() {
+                    this.stats = await this.apiCall('/stats');
+                },
+                async loadUsers() {
+                    this.users = await this.apiCall('/users');
+                },
+                async openUserDetails(user) {
+                    this.selectedUser = user;
+                    this.newReminder = { task: '', timeString: '', recurrence: 'none', bsDate: '' };
+                    this.editForm = {
+                        maxWebsites: user.maxWebsites,
+                        maxActiveReminders: user.maxActiveReminders,
+                        maxRecurringReminders: user.maxRecurringReminders,
+                        strikes: user.strikes,
+                        isLocked: user.isLocked
+                    };
+                    this.directMessage = '';
+                    const data = await this.apiCall(`/users/${user.chatId}/details`);
+                    this.userDetails = { websites: data.websites, reminders: data.reminders };
+                    
+                    // Initialize Nepali Date Picker after DOM renders
+                    setTimeout(() => {
+                        const dateInput = document.getElementById("ndp-date");
+                        if (dateInput) {
+                            dateInput.nepaliDatePicker({
+                                ndpYear: true,
+                                ndpMonth: true,
+                                ndpYearCount: 20
+                            });
+                        }
+                    }, 200);
+                },
+                insertFormat(tag) {
+                    const el = document.getElementById('msg-textarea');
+                    const start = el.selectionStart;
+                    const end = el.selectionEnd;
+                    const text = this.directMessage;
+                    const selectedText = text.substring(start, end);
+                    const beforeText = text.substring(0, start);
+                    const afterText = text.substring(end);
+                    
+                    this.directMessage = `${beforeText}<${tag}>${selectedText}</${tag}>${afterText}`;
+                    
+                    setTimeout(() => {
+                        el.focus();
+                        el.setSelectionRange(start + tag.length + 2, end + tag.length + 2);
+                    }, 50);
+                },
+                insertEmoji(emoji) {
+                    const el = document.getElementById('msg-textarea');
+                    const start = el.selectionStart || this.directMessage.length;
+                    const text = this.directMessage;
+                    this.directMessage = text.substring(0, start) + emoji + text.substring(start);
+                    
+                    setTimeout(() => {
+                        el.focus();
+                        el.setSelectionRange(start + emoji.length, start + emoji.length);
+                    }, 50);
+                },
+                async sendDirectMessage() {
+                    if (!this.directMessage) return;
+                    try {
+                        await this.apiCall(`/users/${this.selectedUser.chatId}/message`, {
+                            method: 'POST',
+                            body: JSON.stringify({ message: this.directMessage })
+                        });
+                        this.showToast('Message sent via Telegram!');
+                        this.directMessage = '';
+                    } catch (e) {
+                        this.showToast('Error sending message: ' + e.message, 'error');
+                    }
+                },
+                async saveUserDetails() {
+                    try {
+                        await this.apiCall(`/users/${this.selectedUser.chatId}/update`, {
+                            method: 'POST',
+                            body: JSON.stringify(this.editForm)
+                        });
+                        this.showToast('User updated successfully!');
+                        this.loadUsers(); 
+                    } catch (e) {
+                        this.showToast('Error: ' + e.message, 'error');
+                    }
+                },
+                async addReminder() {
+                    try {
+                        const bsDate = document.getElementById('ndp-date').value;
+                        if (!bsDate) {
+                            this.showToast('Please select a Nepali Date', 'error');
+                            return;
+                        }
+                        this.newReminder.bsDate = bsDate;
+
+                        const res = await this.apiCall(`/users/${this.selectedUser.chatId}/reminders`, {
+                            method: 'POST',
+                            body: JSON.stringify(this.newReminder)
+                        });
+                        // Format the new reminder date
+                        const d = new Date(res.reminder.time);
+                        res.reminder.formattedTime = res.reminder.formattedTime || "New (Refresh to see Nepali Date)"; 
+                        this.userDetails.reminders.push(res.reminder);
+                        this.newReminder = { task: '', timeString: '', recurrence: 'none', bsDate: '' };
+                        document.getElementById('ndp-date').value = '';
+                        this.showToast('Reminder created successfully!');
+                        this.loadStats();
+                    } catch (e) {
+                        this.showToast('Error adding reminder: ' + e.message, 'error');
+                    }
+                },
+                async deleteWebsite(foldername) {
+                    if (!confirm(`Are you sure you want to delete the website '${foldername}'?`)) return;
+                    try {
+                        await this.apiCall(`/websites/${foldername}`, { method: 'DELETE' });
+                        this.userDetails.websites = this.userDetails.websites.filter(w => w.foldername !== foldername);
+                        this.showToast(`Website '${foldername}' deleted`);
+                        this.loadStats();
+                    } catch (e) {
+                        this.showToast('Error: ' + e.message, 'error');
+                    }
+                },
+                async deleteReminder(id) {
+                    if (!confirm(`Are you sure you want to delete this reminder?`)) return;
+                    try {
+                        await this.apiCall(`/reminders/${id}`, { method: 'DELETE' });
+                        this.userDetails.reminders = this.userDetails.reminders.filter(r => r.id !== id);
+                        this.showToast('Reminder deleted successfully');
+                        this.loadStats();
+                    } catch (e) {
+                        this.showToast('Error: ' + e.message, 'error');
+                    }
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>

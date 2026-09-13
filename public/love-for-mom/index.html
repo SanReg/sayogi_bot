@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💕 For My Mom 💕</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            overflow-x: hidden;
+            color: #5a3d5c;
+        }
+
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 20px;
+        }
+
+        .floating-petals {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .petal {
+            position: absolute;
+            animation: fallDown 8s linear infinite;
+            opacity: 0.7;
+            font-size: 18px;
+        }
+
+        @keyframes fallDown {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.7; }
+            90% { opacity: 0.7; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 50px 40px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            max-width: 650px;
+            z-index: 1;
+            animation: slideUp 1s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .heart-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #d63384;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .subtitle {
+            font-size: 1.4em;
+            color: #8b5a7b;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .reasons {
+            text-align: left;
+            margin: 30px 0;
+        }
+
+        .reason {
+            background: linear-gradient(90deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .reason:hover {
+            transform: translateX(10px);
+        }
+
+        .reason-emoji {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+
+        .reason-text {
+            font-size: 1em;
+            color: #5a3d5c;
+        }
+
+        .mom-quote {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 30px;
+            position: relative;
+        }
+
+        .quote-text {
+            font-style: italic;
+            font-size: 1.2em;
+            line-height: 1.8;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .quote-author {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .cta-button {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: linear-gradient(45deg, #d63384, #ff6b6b);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 5px 20px rgba(214, 51, 132, 0.4);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(214, 51, 132, 0.6);
+        }
+
+        .photo-frame {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ffecd2, #fcb69f);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4em;
+            border: 5px solid white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.2em; }
+            .main-card { padding: 30px 25px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-petals" id="petals"></div>
+    
+    <div class="container">
+        <div class="main-card">
+            <div class="photo-frame">👩‍❤️‍👦</div>
+            <h1>💕 For My Mom 💕</h1>
+            <p class="subtitle">
+                You are the reason I smile, the strength behind my dreams,<br>
+                and the purest love I have ever known.
+            </p>
+            
+            <div class="reasons">
+                <div class="reason">
+                    <div class="reason-emoji">🌸</div>
+                    <div class="reason-text">Your unconditional love and sacrifice</div>
+                </div>
+                <div class="reason">
+                    <div class="reason-emoji">🤲</div>
+                    <div class="reason-text">Your gentle hands that always comfort me</div>
+                </div>
+                <div class="reason">
+                    <div class="reason-emoji">🌟</div>
+                    <div class="reason-text">Your wisdom that guides me every day</div>
+                </div>
+                <div class="reason">
+                    <div class="reason-emoji">💪</div>
+                    <div class="reason-text">Your strength that inspires me always</div>
+                </div>
+            </div>
+            
+            <div class="mom-quote">
+                <p class="quote-text">
+                    "A mother's love is the fuel that enables a normal human being to do the impossible."
+                </p>
+                <p class="quote-author">- Marion C. Garretty</p>
+            </div>
+            
+            <button class="cta-button" onclick="showLove()">💐 Tell Mom You Love Her</button>
+        </div>
+    </div>
+
+    <script>
+        // Create floating petals
+        const petalsContainer = document.getElementById('petals');
+        const petalSymbols = ['🌸', '🌺', '💐', '🌷', '🌻', '🥀'];
+        
+        function createPetal() {
+            const petal = document.createElement('div');
+            petal.className = 'petal';
+            petal.textContent = petalSymbols[Math.floor(Math.random() * petalSymbols.length)];
+            petal.style.left = Math.random() * 100 + '%';
+            petal.style.animationDuration = (Math.random() * 3 + 6) + 's';
+            petal.style.animationDelay = Math.random() * 2 + 's';
+            petalsContainer.appendChild(petal);
+            
+            setTimeout(() => petal.remove(), 10000);
+        }
+        
+        setInterval(createPetal, 1000);
+        
+        // Surprise button
+        function showLove() {
+            const messages = [
+                "Mom, I love you more than words can express! 💕",
+                "Thank you for everything, Mom! You're the best! 🌟",
+                "I'm so grateful to have you, Mom! 💖",
+                "You mean the world to me, Mom! 🌍",
+                "I love you forever, Mom! ❤️"
+            ];
+            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+            alert(randomMsg);
+        }
+    </script>
+</body>
+</html>
